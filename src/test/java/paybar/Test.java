@@ -13,7 +13,7 @@ import com.payplus.api.util.HttpClient4Utils;
 import java.text.DateFormat;
 import java.util.*;
 
-public class test {
+public class Test {
     private static String merchantNo = "******";//直销商户测试账户
     private static String key = "********";//测试秘钥
 

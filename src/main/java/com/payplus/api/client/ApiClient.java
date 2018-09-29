@@ -78,50 +78,57 @@ public class ApiClient {
 
     /**
      * 文件下载至filePath, 可指定超时时间
+     *
      * @param url
      * @param apiRequest
      * @param filePath
-     * @param timeoutMillis
-     *          超时时间,单位:毫秒
+     * @param timeoutMillis 超时时间,单位:毫秒
      * @return
      */
     public static void downloadFile(String url, ApiRequest apiRequest, String filePath, int timeoutMillis) {
         /** 参数校验 */
         checkParams(url, apiRequest, timeoutMillis);
-        /** 组装参数 */
-        Map<String, String> postParamMap = buildHttpRequestParamMap(apiRequest);
-        FileOutputStream fileOutputStream = null;
-        BufferedInputStream bufferedInputStream = null;
+        InputStream input = null;
+        OutputStream out = null;
         try {
-            /** 根据path创建文件 */
+            String content = getContent(url, apiRequest, timeoutMillis);
             File file = new File(filePath);
             file.getParentFile().mkdirs();
             file.createNewFile();
-            /** 发起请求获取文件流 */
-//            InputStream responseStream = HttpClient4Utils.sendHttpRequestStream(url, postParamMap, HttpClient4Utils.DEFAULT_CHARSET, true, timeoutMillis);
-            /** 写文件 */
-//            fileOutputStream = new FileOutputStream(file);
-//            bufferedInputStream = new BufferedInputStream(responseStream);
-//            byte[] by = new byte[API_BUFFER_SIZE];
-//            while (true) {
-//                int i = bufferedInputStream.read(by);
-//                if (i == -1) {
-//                    break;
-//                }
-//                fileOutputStream.write(by, 0, i);
-//            }
-            String content = HttpClient4Utils.sendHttpRequest(url, postParamMap, HttpClient4Utils.DEFAULT_CHARSET, true, timeoutMillis);
-            InputStream input = new ByteArrayInputStream(content.getBytes());// 数据输入流处理
-            OutputStream out = new BufferedOutputStream(new FileOutputStream(filePath));
+            input = new ByteArrayInputStream(content.getBytes());// 数据输入流处理
+            out = new BufferedOutputStream(new FileOutputStream(filePath));
             IOUtils.copy(input, out);
             out.flush();
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            CloseUtils.close(fileOutputStream, bufferedInputStream);
+            CloseUtils.close(out, input);
         }
     }
 
+    /**
+     * 文件下载返回文件流 可指定超时时间
+     *
+     * @param url
+     * @param apiRequest
+     * @param timeoutMillis 超时时间,单位:毫秒
+     * @return
+     */
+    public static InputStream downloadFile(String url, ApiRequest apiRequest) {
+        /** 参数校验 */
+        checkParams(url, apiRequest, API_DOWNLOAD_TIME_OUT);
+        try {
+            String content = getContent(url, apiRequest, API_DOWNLOAD_TIME_OUT);
+            return new ByteArrayInputStream(content.getBytes());// 数据输入流处理
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String getContent(String url, ApiRequest apiRequest, int timeoutMillis) {
+        Map<String, String> postParamMap = buildHttpRequestParamMap(apiRequest);
+        return HttpClient4Utils.sendHttpRequest(url, postParamMap, HttpClient4Utils.DEFAULT_CHARSET, true, timeoutMillis);
+    }
     /**
      * 将filePath指定的文件上传至服务器, 默认超时时间为: API_UPLOAD_TIME_OUT
      * @param baseUrl
